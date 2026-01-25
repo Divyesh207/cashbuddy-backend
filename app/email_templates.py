@@ -92,7 +92,7 @@ def get_otp_email_html(otp_code: str, user_name: str = "User") -> str:
                 <p class="warning">This code will expire in 10 minutes.<br>If you did not request this code, please ignore this email.</p>
             </div>
             <div class="footer">
-                &copy; 2024 CashBuddy Finance Manager. All rights reserved.
+                &copy; 2026 CashBuddy Finance Manager. All rights reserved.
             </div>
         </div>
     </body>
