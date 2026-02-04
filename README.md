@@ -1,32 +1,29 @@
-# 💰 CashBuddy – Backend
+# 💰 CashBuddy – Backend API
 
-CashBuddy is an AI-powered personal finance management application that helps users track expenses, manage budgets, and improve savings.
+CashBuddy is an AI-powered personal finance platform that helps users track expenses, manage budgets, and gain smart financial insights.
 
-This repository contains the **backend API** of CashBuddy, responsible for authentication, transaction management, budgeting logic, and AI-based categorization.
+This repository contains the **backend API** that powers CashBuddy, handling authentication, transactions, budgeting, and financial data management.
 
 ---
 
 ## 🚀 Features
 
-- 🔐 User authentication (JWT-based login/register)
-- 💳 Expense & income tracking APIs
-- 📊 Budget management
-- 🤖 ML-based transaction categorization
-- 🔔 Notifications support (planned)
-- 🗄️ PostgreSQL database integration
-- 🌍 Deployment-ready configuration
+- 🔐 User authentication system  
+- 💳 Expense & income tracking  
+- 📊 Budget management  
+- 🗄️ Database integration for financial records  
+- ⚡ Fast API performance  
+- 🌍 Deployment-ready backend  
 
 ---
 
 ## 🛠️ Tech Stack
 
-- Python
-- Flask
-- PostgreSQL
-- SQLAlchemy
-- JWT Authentication
-- scikit-learn (for ML features)
-- REST API architecture
+- Python  
+- FastAPI  
+- Uvicorn (ASGI server)  
+- SQLite (current)  
+- REST API architecture  
 
 ---
 
@@ -35,14 +32,14 @@ This repository contains the **backend API** of CashBuddy, responsible for authe
 ```
 
 cashbuddy-backend/
-├── app.py
-├── models/
-├── routes/
-├── services/
-├── ml/
-├── config.py
-├── requirements.txt
-└── .env
+│
+├── app/                # Main backend application
+├── venv/               # Virtual environment (local)
+├── .gitignore
+├── cashbuddy.db        # SQLite database
+├── requirements.txt    # Dependencies
+├── runtime.txt         # Runtime config for deployment
+└── README.md
 
 ````
 
@@ -53,7 +50,7 @@ cashbuddy-backend/
 ### 1️⃣ Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/cashbuddy-backend.git
+git clone https://github.com/Divyesh207/cashbuddy-backend.git
 cd cashbuddy-backend
 ````
 
@@ -63,8 +60,20 @@ cd cashbuddy-backend
 
 ```bash
 python -m venv venv
-source venv/bin/activate   # Mac/Linux
-venv\Scripts\activate      # Windows
+```
+
+Activate:
+
+**Windows**
+
+```bash
+venv\Scripts\activate
+```
+
+**Mac/Linux**
+
+```bash
+source venv/bin/activate
 ```
 
 ---
@@ -77,45 +86,39 @@ pip install -r requirements.txt
 
 ---
 
-### 4️⃣ Setup environment variables
-
-Create a `.env` file:
-
-```
-DATABASE_URL=your_postgresql_url
-SECRET_KEY=your_secret_key
-JWT_SECRET=your_jwt_secret
-```
-
----
-
-### 5️⃣ Run the server
+### 4️⃣ Run the server
 
 ```bash
-python app.py
+uvicorn app.main:app --reload
 ```
 
 Server runs on:
 
 ```
-http://localhost:5000
+http://127.0.0.1:8000
+```
+
+API Docs (auto-generated):
+
+```
+http://127.0.0.1:8000/docs
 ```
 
 ---
 
 ## 🗄️ Database
 
-CashBuddy uses **PostgreSQL**.
+Currently uses **SQLite** (`cashbuddy.db`) for storing:
 
-Example connection string:
+* Users
+* Transactions
+* Budget data
 
-```
-postgresql://username:password@localhost:5432/cashbuddy_db
-```
+Can be upgraded to PostgreSQL for production.
 
 ---
 
-## 🔗 API Endpoints (Sample)
+## 🔗 Example API Routes
 
 ### Auth
 
@@ -126,27 +129,11 @@ postgresql://username:password@localhost:5432/cashbuddy_db
 
 * GET `/transactions`
 * POST `/transactions`
-* DELETE `/transactions/<id>`
 
 ### Budget
 
 * GET `/budget`
 * POST `/budget`
-
----
-
-## 🤖 ML Feature
-
-CashBuddy uses a simple ML model to:
-
-* Categorize expenses
-* Provide smart budgeting insights
-
-Model can be found in:
-
-```
-/ml/
-```
 
 ---
 
@@ -156,12 +143,13 @@ Backend can be deployed on:
 
 * Render
 * Railway
-* AWS (EC2/Elastic Beanstalk)
+* AWS
+* VPS servers
 
-Example Render deployment:
+Make sure to:
 
-1. Connect GitHub repo
-2. Add environment variables
-3. Deploy as Web Service
+* Set environment variables
+* Use production database
+* Disable debug mode
 
 ---
