@@ -68,6 +68,8 @@ class LoginVerifyRequest(BaseModel):
     email: str
     otp: str
 
+
+
 class TransactionCreate(BaseModel):
     description: str
     amount: float
@@ -460,6 +462,24 @@ def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Password reset successful"}
 
+@app.put("/notifications/read/all")
+def mark_all_notifications_read(user_id: int, db: Session = Depends(get_db)):
+    db.query(Notification).filter(Notification.user_id == user_id, Notification.is_read == False).update({"is_read": True})
+    db.commit()
+    return {"message": "All marked as read"}
+
+@app.put("/notifications/{id}/read")
+def mark_notification_read(id: int, user_id: int, db: Session = Depends(get_db)):
+    notif = db.query(Notification).filter(Notification.id == id, Notification.user_id == user_id).first()
+    if notif:
+        notif.is_read = True
+        db.commit()
+    return {"message": "Read"}
+
+@app.get("/notifications")
+def get_notifications(user_id: int, db: Session = Depends(get_db)):
+    return db.query(Notification).filter(Notification.user_id == user_id).order_by(Notification.created_at.desc()).limit(20).all()
+
 @app.get("/dashboard/stats")
 def get_stats(user_id: int, db: Session = Depends(get_db)):
     # Run lazy checks
@@ -537,20 +557,22 @@ def get_trend(user_id: int, period: str = "month", db: Session = Depends(get_db)
 def get_breakdown(user_id: int, db: Session = Depends(get_db)):
     now = datetime.datetime.now()
     txs = db.query(Transaction).filter(
-        Transaction.user_id == user_id, Transaction.type == "Expense", extract('month', Transaction.date) == now.month
+        Transaction.user_id == user_id, extract('month', Transaction.date) == now.month
     ).all()
     data = {}
     for t in txs:
-        if t.category not in data: data[t.category] = {"name": t.category, "value": 0, "count": 0}
-        data[t.category]["value"] += t.amount
-        data[t.category]["count"] += 1
+        cat_name = "Income" if t.type == "Income" else t.category
+        if cat_name not in data: data[cat_name] = {"name": cat_name, "value": 0, "count": 0}
+        data[cat_name]["value"] += t.amount
+        data[cat_name]["count"] += 1
     return list(data.values())
 
 @app.get("/transactions")
-def get_transactions(user_id: int, search: str = "", category: str = "", db: Session = Depends(get_db)):
+def get_transactions(user_id: int, search: str = "", category: str = "", type: str = "", db: Session = Depends(get_db)):
     query = db.query(Transaction).filter(Transaction.user_id == user_id)
     if search: query = query.filter(Transaction.description.contains(search))
     if category: query = query.filter(Transaction.category == category)
+    if type: query = query.filter(Transaction.type == type)
     return query.order_by(Transaction.date.desc()).all()
 
 @app.delete("/transactions/{id}")
@@ -762,13 +784,17 @@ def get_budget_data(user_id: int, db: Session = Depends(get_db)):
     
     today = datetime.datetime.now().date()
     
+    # Updated: Only exclude system auto-transactions (Sweeps & Auto-Savings)
+    # Manual savings deposits SHOULD count as usage against daily budget
     expenses_today = db.query(func.sum(Transaction.amount)).filter(
         Transaction.user_id == user_id, 
         Transaction.type == "Expense",
-        Transaction.category != "Savings", 
+        Transaction.description != "Daily Budget Sweep",
+        Transaction.description != "Monthly Auto-Savings",
         cast(Transaction.date, Date) == today
     ).scalar() or 0
     
+    # Sweeps are counted separately
     sweeps_today = db.query(func.sum(Sweep.amount)).filter(
         Sweep.user_id == user_id, cast(Sweep.date, Date) == today
     ).scalar() or 0
@@ -820,7 +846,11 @@ def sweep_budget(user_id: int, payload: dict, db: Session = Depends(get_db)):
     amount = payload.get('amount', 0)
     if amount <= 0: return {"error": "Nothing to sweep"}
     
-    sweep = Sweep(user_id=user_id, amount=amount)
+    # Use LOCAL time now() to match Transaction behavior and "Today" logic
+    # This ensures consistency with get_budget_data queries
+    now = datetime.datetime.now()
+    
+    sweep = Sweep(user_id=user_id, amount=amount, date=now)
     
     goal = db.query(SavingsGoal).filter(SavingsGoal.user_id == user_id).order_by(SavingsGoal.id).first()
     if goal:
@@ -832,7 +862,7 @@ def sweep_budget(user_id: int, payload: dict, db: Session = Depends(get_db)):
         amount=amount,
         type="Expense",
         category="Savings",
-        date=datetime.datetime.now()
+        date=now
     )
     db.add(tx)
     db.add(sweep)
